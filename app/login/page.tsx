@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { CheckSquare } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,9 +46,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h1 className="text-center text-4xl font-bold text-gray-900">
-            Todo-fier
-          </h1>
+          <div className="flex justify-center mb-4">
+            <div className="bg-black text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+              <CheckSquare className="w-8 h-8" />
+              <h1 className="text-4xl font-bold tracking-tight">
+                Todo-fier
+              </h1>
+            </div>
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>

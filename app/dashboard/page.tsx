@@ -8,7 +8,7 @@ import TaskGroupCard, { Task } from '../components/TaskGroupCard';
 import OverviewPanel, { StatusFilterType } from '../components/OverviewPanel';
 import AddTaskModal, { TaskFormData, CategoryType as ModalCategoryType } from '../components/AddTaskModal';
 import { useDebounce } from '../hooks/useDebounce';
-import { ClipboardList, AlertCircle, Github } from 'lucide-react';
+import { ClipboardList, AlertCircle } from 'lucide-react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 type CategoryType = 'ALL' | 'PERSONAL' | 'WORK';
 
@@ -375,17 +375,6 @@ export default function DashboardPage() {
       onSubmit={handleCreateTask}
       defaultCategory={modalDefaultCategory}
     />
-
-    {/* Floating GitHub Button */}
-    <a
-      href="https://github.com/shpjp/crud-todo"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 bg-black text-white p-4 rounded-full shadow-lg hover:bg-gray-800 transition-all hover:scale-110"
-      aria-label="View on GitHub"
-    >
-      <Github className="w-6 h-6" />
-    </a>
     </SidebarProvider>
   );
 }
