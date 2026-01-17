@@ -9,6 +9,7 @@ if (!JWT_SECRET) {
 export interface JWTPayload {
   userId: string;
   email: string;
+  name?: string;
 }
 
 /**

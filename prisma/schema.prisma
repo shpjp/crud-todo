@@ -12,6 +12,7 @@ datasource db {
 
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String?
   email     String   @unique
   password  String
   tasks     Task[]
@@ -25,6 +26,8 @@ model Task {
   description String?
   completed   Boolean   @default(false)
   priority    Priority  @default(MEDIUM)
+  status      Status    @default(TODO)
+  category    Category  @default(PERSONAL)
   dueDate     DateTime?
   userId      String    @db.ObjectId
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -32,10 +35,23 @@ model Task {
   updatedAt   DateTime  @updatedAt
 
   @@index([userId])
+  @@index([category])
+  @@index([status])
 }
 
 enum Priority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Category {
+  PERSONAL
+  WORK
 }

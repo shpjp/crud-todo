@@ -1,175 +1,51 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  completed: boolean;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  dueDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface TaskCardProps {
-  task: Task;
-  onUpdate: (id: string, updates: Partial<Task>) => void;
-  onDelete: (id: string) => void;
-  loading: boolean;
-}
-
-const TaskCard = memo(function TaskCard({ task, onUpdate, onDelete, loading }: TaskCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-  const [editDescription, setEditDescription] = useState(task.description || '');
-
-  const priorityColors = {
-    HIGH: 'bg-red-100 text-red-800 border-red-300',
-    MEDIUM: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    LOW: 'bg-green-100 text-green-800 border-green-300',
-  };
-
-  const handleSaveEdit = useCallback(() => {
-    if (editTitle.trim()) {
-      onUpdate(task.id, {
-        title: editTitle.trim(),
-        description: editDescription.trim() || null,
-      });
-      setIsEditing(false);
-    }
-  }, [task.id, editTitle, editDescription, onUpdate]);
-
-  const handleToggleComplete = useCallback(() => {
-    onUpdate(task.id, { completed: !task.completed });
-  }, [task.id, task.completed, onUpdate]);
-
-  const handleDelete = useCallback(() => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      onDelete(task.id);
-    }
-  }, [task.id, onDelete]);
-
-  const formatDate = (date: string | null) => {
-    if (!date) return null;
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  if (isEditing) {
-    return (
-      <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
-        <input
-          type="text"
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Task title"
-          disabled={loading}
-        />
-        <textarea
-          value={editDescription}
-          onChange={(e) => setEditDescription(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Task description"
-          rows={3}
-          disabled={loading}
-        />
-        <div className="flex gap-2">
-          <button
-            onClick={handleSaveEdit}
-            disabled={loading || !editTitle.trim()}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => setIsEditing(false)}
-            disabled={loading}
-            className="px-3 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-2">
-        <h3 className={`font-semibold text-lg ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-          {task.title}
-        </h3>
-        <span className={`px-2 py-1 text-xs font-medium rounded-md border ${priorityColors[task.priority]}`}>
-          {task.priority}
-        </span>
-      </div>
-      {task.description && (
-        <p className={`text-sm mb-3 ${task.completed ? 'line-through text-gray-400' : 'text-gray-600'}`}>
-          {task.description.length > 100
-            ? task.description.substring(0, 100) + '...'
-            : task.description}
-        </p>
-      )}
-      {task.dueDate && (
-        <p className="text-xs text-gray-500 mb-3">
-          Due: {formatDate(task.dueDate)}
-        </p>
-      )}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={handleToggleComplete}
-          disabled={loading}
-          className={`px-3 py-1 text-sm rounded-md ${
-            task.completed
-              ? 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          } disabled:cursor-not-allowed`}
-        >
-          {task.completed ? 'Undo' : 'Complete'}
-        </button>
-        <button
-          onClick={() => setIsEditing(true)}
-          disabled={loading}
-          className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:cursor-not-allowed"
-        >
-          Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={loading}
-          className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:cursor-not-allowed"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-});
+import AppSidebar from '../components/AppSidebar';
+import Header from '../components/Header';
+import TaskGroupCard, { Task } from '../components/TaskGroupCard';
+import OverviewPanel, { StatusFilterType } from '../components/OverviewPanel';
+import AddTaskModal, { TaskFormData, CategoryType as ModalCategoryType } from '../components/AddTaskModal';
+import { useDebounce } from '../hooks/useDebounce';
+import { ClipboardList, AlertCircle, Github } from 'lucide-react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+type CategoryType = 'ALL' | 'PERSONAL' | 'WORK';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
-    dueDate: '',
-  });
+  const [activeCategory, setActiveCategory] = useState<CategoryType>('ALL');
+  const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilterType>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalDefaultCategory, setModalDefaultCategory] = useState<ModalCategoryType>('PERSONAL');
+
+  // Debounce search query
+  const debouncedSearch = useDebounce(searchQuery, 400);
+
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const response = await fetch('/api/profile');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched user profile:', data);
+        setUserEmail(data.user.email);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile:', err);
+    }
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/tasks');
+      
       if (!response.ok) {
         if (response.status === 401) {
           router.push('/login');
@@ -177,21 +53,23 @@ export default function DashboardPage() {
         }
         throw new Error('Failed to fetch tasks');
       }
+      
       const data = await response.json();
       setTasks(data.tasks);
       setError('');
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
   }, [router]);
 
   useEffect(() => {
+    fetchUserProfile();
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchUserProfile, fetchTasks]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/login');
@@ -199,53 +77,72 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Logout error:', err);
     }
-  };
+  }, [router]);
 
-  const handleAddTask = async () => {
-    if (!newTask.title.trim()) return;
+  const handleAddTaskClick = useCallback((category?: ModalCategoryType) => {
+    // If category is provided, use it; otherwise use active category or default to PERSONAL
+    const defaultCat = category || (activeCategory !== 'ALL' ? activeCategory as ModalCategoryType : 'PERSONAL');
+    setModalDefaultCategory(defaultCat);
+    setIsModalOpen(true);
+  }, [activeCategory]);
 
+  const handleCreateTask = useCallback(async (formData: TaskFormData) => {
     setActionLoading(true);
+    
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newTask.title,
-          description: newTask.description || null,
-          priority: newTask.priority,
-          dueDate: newTask.dueDate || null,
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          category: formData.category,
+          priority: formData.priority,
+          status: formData.status,
+          dueDate: formData.dueDate || null,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to create task');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create task');
+      }
 
       const data = await response.json();
-      setTasks([...tasks, data.task]);
-      setNewTask({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
-      setShowAddForm(false);
+      setTasks(prev => [...prev, data.task]);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to create task');
+      throw err;
     } finally {
       setActionLoading(false);
     }
-  };
+  }, []);
 
-  const handleUpdateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+  const handleToggleTask = useCallback(async (id: string, completed: boolean) => {
     setActionLoading(true);
+    
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed } : t));
+    
     try {
       const response = await fetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...updates }),
+        body: JSON.stringify({ id, completed }),
       });
 
-      if (!response.ok) throw new Error('Failed to update task');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update task');
+      }
 
       const data = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? data.task : t)));
+      setTasks(prev => prev.map(t => t.id === id ? data.task : t));
       setError('');
     } catch (err: any) {
+      // Revert optimistic update on error
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !completed } : t));
       setError(err.message || 'Failed to update task');
     } finally {
       setActionLoading(false);
@@ -254,215 +151,241 @@ export default function DashboardPage() {
 
   const handleDeleteTask = useCallback(async (id: string) => {
     setActionLoading(true);
+    
+    // Optimistic update
+    const taskToDelete = tasks.find(t => t.id === id);
+    setTasks(prev => prev.filter(t => t.id !== id));
+    
     try {
       const response = await fetch(`/api/tasks?id=${id}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete task');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete task');
+      }
 
-      setTasks((prev) => prev.filter((t) => t.id !== id));
       setError('');
     } catch (err: any) {
+      // Revert optimistic update on error
+      if (taskToDelete) {
+        setTasks(prev => [...prev, taskToDelete]);
+      }
       setError(err.message || 'Failed to delete task');
     } finally {
       setActionLoading(false);
     }
-  }, []);
-
-  const { ongoingTasks, completedTasks, overdueTasks } = useMemo(() => {
-    const now = new Date();
-    const ongoing: Task[] = [];
-    const completed: Task[] = [];
-    const overdue: Task[] = [];
-
-    tasks.forEach((task) => {
-      if (task.completed) {
-        completed.push(task);
-      } else if (task.dueDate && new Date(task.dueDate) < now) {
-        overdue.push(task);
-      } else {
-        ongoing.push(task);
-      }
-    });
-
-    return { ongoingTasks: ongoing, completedTasks: completed, overdueTasks: overdue };
   }, [tasks]);
+
+  // Step 1: Filter by category
+  const categoryFilteredTasks = useMemo(() => {
+    if (activeCategory !== 'ALL') {
+      return tasks.filter(t => t.category === activeCategory);
+    }
+    return tasks;
+  }, [tasks, activeCategory]);
+
+  // Step 2: Filter by status (Completed / Remaining / All)
+  const statusFilteredTasks = useMemo(() => {
+    if (activeStatusFilter === 'COMPLETED') {
+      return categoryFilteredTasks.filter(t => t.completed);
+    } else if (activeStatusFilter === 'REMAINING') {
+      return categoryFilteredTasks.filter(t => !t.completed);
+    }
+    return categoryFilteredTasks;
+  }, [categoryFilteredTasks, activeStatusFilter]);
+
+  // Step 3: Filter by search query and sort
+  const filteredTasks = useMemo(() => {
+    let filtered = statusFilteredTasks;
+    
+    // Filter by search query (debounced)
+    if (debouncedSearch.trim()) {
+      const query = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.title.toLowerCase().includes(query)
+      );
+    }
+    
+    // Sort: incomplete first, then by priority (HIGH > MEDIUM > LOW), then by due date
+    return filtered.sort((a, b) => {
+      // Completed tasks go last
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      
+      // Sort by priority
+      const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+      if (a.priority !== b.priority) {
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      }
+      
+      // Sort by due date
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      
+      // Sort by creation date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [statusFilteredTasks, debouncedSearch]);
+
+  // Group tasks by category for display
+  const taskGroups = useMemo(() => {
+    if (activeCategory === 'ALL') {
+      return [
+        { category: 'PERSONAL' as CategoryType, tasks: filteredTasks.filter(t => t.category === 'PERSONAL') },
+        { category: 'WORK' as CategoryType, tasks: filteredTasks.filter(t => t.category === 'WORK') },
+      ];
+    } else {
+      return [{ category: activeCategory, tasks: filteredTasks }];
+    }
+  }, [activeCategory, filteredTasks]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-600">Loading tasks...</div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600">Loading your tasks...</p>
+        </div>
       </div>
     );
   }
 
+  const hasResults = taskGroups.some(group => group.tasks.length > 0);
+  const isSearching = debouncedSearch.trim().length > 0;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Todo-fier</h1>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-              >
-                {showAddForm ? 'Cancel' : '+ Add Task'}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
+        {/* Sidebar */}
+        <AppSidebar
+          activeCategory={activeCategory}
+          userName={userEmail}
+          onCategoryChange={setActiveCategory}
+          onLogout={handleLogout}
+        />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">{error}</p>
+        {/* Main Content */}
+        <SidebarInset className="flex flex-col">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200">
+            <Header onAddTaskClick={() => handleAddTaskClick()} />
           </div>
-        )}
 
-        {/* Add Task Form */}
-        {showAddForm && (
-          <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-            <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="flex justify-center px-8 pt-6 pb-4 bg-gray-50">
+            <div className="relative w-full max-w-2xl">
               <input
                 type="text"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="Task title *"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={actionLoading}
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2.5 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white"
               />
-              <textarea
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                placeholder="Task description (optional)"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={actionLoading}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select
-                  value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as any })}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={actionLoading}
-                >
-                  <option value="LOW">Low Priority</option>
-                  <option value="MEDIUM">Medium Priority</option>
-                  <option value="HIGH">High Priority</option>
-                </select>
-                <input
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={actionLoading}
-                />
-              </div>
-              <button
-                onClick={handleAddTask}
-                disabled={actionLoading || !newTask.title.trim()}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed font-medium"
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {actionLoading ? 'Creating...' : 'Create Task'}
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-8 mt-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+                <button
+                  onClick={() => setError('')}
+                  className="text-xs text-red-600 hover:text-red-700 underline mt-1"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Task Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Ongoing Tasks */}
-          <div>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Ongoing <span className="text-gray-500">({ongoingTasks.length})</span>
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {ongoingTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No ongoing tasks</p>
-              ) : (
-                ongoingTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    loading={actionLoading}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+        {/* Task Cards with Overview Panel */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main task area */}
+          <main className="flex-1 overflow-y-auto px-8 py-6">
 
-          {/* Completed Tasks */}
-          <div>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Completed <span className="text-gray-500">({completedTasks.length})</span>
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {completedTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No completed tasks</p>
-              ) : (
-                completedTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
+            {!hasResults ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <ClipboardList className="w-16 h-16 text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {isSearching ? 'No results found' : activeCategory === 'ALL' ? 'No tasks yet' : 'No tasks in this category'}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {isSearching 
+                    ? 'Try adjusting your search query'
+                    : 'Start by adding your first task using the Add Task button'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {taskGroups.map((group) => (
+                  <TaskGroupCard
+                    key={group.category}
+                    category={group.category}
+                    tasks={group.tasks}
+                    onAddTaskClick={() => handleAddTaskClick(group.category as ModalCategoryType)}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
                     loading={actionLoading}
                   />
-                ))
-              )}
-            </div>
-          </div>
+                ))}
+              </div>
+            )}
+          </main>
 
-          {/* Overdue Tasks */}
-          <div>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold text-red-600">
-                Overdue <span className="text-gray-500">({overdueTasks.length})</span>
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {overdueTasks.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No overdue tasks</p>
-              ) : (
-                overdueTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onUpdate={handleUpdateTask}
-                    onDelete={handleDeleteTask}
-                    loading={actionLoading}
-                  />
-                ))
-              )}
-            </div>
+          {/* Overview Panel */}
+          <div className="w-72 flex-shrink-0">
+            <OverviewPanel 
+              tasks={tasks}
+              activeStatusFilter={activeStatusFilter}
+              onStatusFilterChange={setActiveStatusFilter}
+            />
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-12 py-6 bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p>&copy; 2026 Todo-fier. Production-quality task management.</p>
-        </div>
-      </footer>
+      </SidebarInset>
     </div>
+
+    {/* Add Task Modal */}
+    <AddTaskModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onSubmit={handleCreateTask}
+      defaultCategory={modalDefaultCategory}
+    />
+
+    {/* Floating GitHub Button */}
+    <a
+      href="https://github.com/shpjp/crud-todo"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="fixed bottom-6 right-6 z-50 bg-black text-white p-4 rounded-full shadow-lg hover:bg-gray-800 transition-all hover:scale-110"
+      aria-label="View on GitHub"
+    >
+      <Github className="w-6 h-6" />
+    </a>
+    </SidebarProvider>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
-import { Priority } from '@prisma/client';
+import { Priority, Category, Status } from '@prisma/client';
 
 // Force Node.js runtime for Prisma
 export const runtime = 'nodejs';
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   try {
     const user = await requireAuth();
     const body = await request.json();
-    const { title, description, priority, dueDate } = body;
+    const { title, description, priority, category, status, dueDate } = body;
 
     // Validate input
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -63,6 +63,22 @@ export async function POST(request: Request) {
     if (priority && !['LOW', 'MEDIUM', 'HIGH'].includes(priority)) {
       return NextResponse.json(
         { error: 'Invalid priority value' },
+        { status: 400 }
+      );
+    }
+
+    // Validate category
+    if (category && !['PERSONAL', 'WORK'].includes(category)) {
+      return NextResponse.json(
+        { error: 'Invalid category value' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status
+    if (status && !['TODO', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status value' },
         { status: 400 }
       );
     }
@@ -85,6 +101,9 @@ export async function POST(request: Request) {
         title: title.trim(),
         description: description?.trim() || null,
         priority: (priority as Priority) || 'MEDIUM',
+        category: (category as Category) || 'PERSONAL',
+        status: (status as Status) || 'TODO',
+        completed: status === 'COMPLETED',
         dueDate: parsedDueDate,
         userId: user.userId,
       },
@@ -114,7 +133,7 @@ export async function PATCH(request: Request) {
   try {
     const user = await requireAuth();
     const body = await request.json();
-    const { id, title, description, completed, priority, dueDate } = body;
+    const { id, title, description, completed, priority, category, status, dueDate } = body;
 
     // Validate task ID
     if (!id) {
@@ -151,6 +170,22 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Validate category if provided
+    if (category && !['PERSONAL', 'WORK'].includes(category)) {
+      return NextResponse.json(
+        { error: 'Invalid category value' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status if provided
+    if (status && !['TODO', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status value' },
+        { status: 400 }
+      );
+    }
+
     // Validate dueDate if provided
     let parsedDueDate: Date | null | undefined = undefined;
     if (dueDate !== undefined) {
@@ -173,6 +208,11 @@ export async function PATCH(request: Request) {
     if (description !== undefined) updateData.description = description?.trim() || null;
     if (completed !== undefined) updateData.completed = completed;
     if (priority !== undefined) updateData.priority = priority as Priority;
+    if (category !== undefined) updateData.category = category as Category;
+    if (status !== undefined) {
+      updateData.status = status as Status;
+      updateData.completed = status === 'COMPLETED';
+    }
     if (parsedDueDate !== undefined) updateData.dueDate = parsedDueDate;
 
     // Update task

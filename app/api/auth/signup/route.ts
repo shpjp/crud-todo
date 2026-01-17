@@ -9,12 +9,20 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { name, email, password } = body;
 
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate name if provided
+    if (name && name.trim().length < 2) {
+      return NextResponse.json(
+        { error: 'Name must be at least 2 characters' },
         { status: 400 }
       );
     }
@@ -54,6 +62,7 @@ export async function POST(request: Request) {
     // Create user
     const user = await prisma.user.create({
       data: {
+        name: name ? name.trim() : null,
         email: email.toLowerCase(),
         password: hashedPassword,
       },
@@ -63,6 +72,7 @@ export async function POST(request: Request) {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+      name: user.name || undefined,
     });
 
     // Create response with httpOnly cookie
@@ -71,6 +81,7 @@ export async function POST(request: Request) {
         message: 'User created successfully',
         user: {
           id: user.id,
+          name: user.name || user.email.split('@')[0],
           email: user.email,
         },
       },

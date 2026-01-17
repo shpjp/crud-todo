@@ -45,6 +45,7 @@ export async function POST(request: Request) {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+      name: user.name || undefined,
     });
 
     // Create response with httpOnly cookie
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
         message: 'Login successful',
         user: {
           id: user.id,
+          name: user.name || user.email.split('@')[0],
           email: user.email,
         },
       },
