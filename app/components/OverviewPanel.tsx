@@ -47,8 +47,8 @@ export default function OverviewPanel({
   }, [tasks]);
 
   return (
-    <aside className="h-full bg-white border-l border-gray-200 p-6 overflow-y-auto">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Overview</h3>
+    <aside className="h-full bg-white border-l border-gray-200 p-4 md:p-6 overflow-y-auto">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 md:mb-6">Overview</h3>
 
       {/* Overview Stats (Clickable Filters) */}
       <div className="space-y-3 mb-6">

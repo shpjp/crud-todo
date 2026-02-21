@@ -16,8 +16,11 @@ export function middleware(request: NextRequest) {
   // API routes are handled by their own authentication logic
   const isApiRoute = pathname.startsWith('/api');
 
-  // If user is not authenticated and trying to access protected route
-  if (!token && !isPublicRoute && !isApiRoute) {
+  // /dashboard is semi-public: unauthenticated visitors see it with the auth overlay
+  const isSemiPublic = pathname === '/dashboard' || pathname.startsWith('/dashboard');
+
+  // If user is not authenticated and trying to access a protected route
+  if (!token && !isPublicRoute && !isApiRoute && !isSemiPublic) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }

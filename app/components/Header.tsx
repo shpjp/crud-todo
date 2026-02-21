@@ -3,6 +3,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { motion } from 'framer-motion';
 
 interface HeaderProps {
@@ -48,16 +49,19 @@ export default function Header({ onAddTaskClick }: HeaderProps) {
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-6">
-      <div className="flex items-start justify-between">
-        {/* Left: Greeting + Date */}
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900">{greeting}</h2>
-          <p className="text-sm text-gray-500 mt-1">{currentDate}</p>
+    <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-8 md:py-6">
+      <div className="flex items-center justify-between gap-2">
+        {/* Left: Mobile trigger + Greeting + Date */}
+        <div className="flex items-center gap-2 min-w-0">
+          <SidebarTrigger className="md:hidden flex-shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-base md:text-2xl font-semibold text-gray-900 truncate">{greeting}</h2>
+            <p className="text-xs md:text-sm text-gray-500 mt-0.5 hidden sm:block truncate">{currentDate}</p>
+          </div>
         </div>
 
-        {/* Center: Hustling Quote */}
-        <div className="flex-1 flex justify-center items-center px-8">
+        {/* Center: Hustling Quote — hidden on mobile */}
+        <div className="hidden md:flex flex-1 justify-center items-center px-8">
           <motion.p
             key={quoteKey}
             initial={{ opacity: 0, y: -4, scale: 0.98 }}
@@ -67,22 +71,23 @@ export default function Header({ onAddTaskClick }: HeaderProps) {
               ease: 'easeOut',
               scale: { duration: 0.4 }
             }}
-            className="text-sm text-gray-400 italic font-light"
+            className="text-sm text-gray-400 italic font-light text-center"
           >
             "{quote}"
           </motion.p>
         </div>
 
         {/* Right: Add Task Button */}
-        <div>
+        <div className="flex-shrink-0">
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
+            {/* Icon-only on mobile, full button on sm+ */}
             <Button 
               onClick={onAddTaskClick} 
               size="sm" 
-              className="gap-2"
+              className="gap-2 px-3 sm:px-4"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
@@ -92,7 +97,7 @@ export default function Header({ onAddTaskClick }: HeaderProps) {
               >
                 {isHovered ? <Loader2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               </motion.div>
-              Add Task
+              <span className="hidden sm:inline">Add Task</span>
             </Button>
           </motion.div>
         </div>

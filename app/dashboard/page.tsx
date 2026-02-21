@@ -278,7 +278,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Search Bar */}
-          <div className="flex justify-center px-8 pt-6 pb-4 bg-gray-50">
+          <div className="flex justify-center px-4 pt-4 pb-3 md:px-8 md:pt-6 md:pb-4 bg-gray-50">
             <div className="relative w-full max-w-2xl">
               <input
                 type="text"
@@ -305,7 +305,7 @@ export default function DashboardPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mx-8 mt-4">
+          <div className="mx-4 mt-3 md:mx-8 md:mt-4">
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
               <div className="flex-1">
@@ -324,7 +324,50 @@ export default function DashboardPage() {
         {/* Task Cards with Overview Panel */}
         <div className="flex-1 flex overflow-hidden">
           {/* Main task area */}
-          <main className="flex-1 overflow-y-auto px-8 py-6">
+          <main className="flex-1 overflow-y-auto px-4 py-4 md:px-8 md:py-6">
+
+            {/* Mobile Stats Strip — hidden on lg where the sidebar panel shows */}
+            <div className="lg:hidden flex gap-2 mb-4 overflow-x-auto pb-1">
+              <button
+                onClick={() => setActiveStatusFilter('ALL')}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeStatusFilter === 'ALL'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeStatusFilter === 'ALL' ? 'bg-white/20' : 'bg-gray-300 text-gray-700'
+                }`}>{tasks.length}</span>
+              </button>
+              <button
+                onClick={() => setActiveStatusFilter('REMAINING')}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeStatusFilter === 'REMAINING'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Remaining
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeStatusFilter === 'REMAINING' ? 'bg-white/20' : 'bg-gray-300 text-gray-700'
+                }`}>{tasks.filter(t => !t.completed).length}</span>
+              </button>
+              <button
+                onClick={() => setActiveStatusFilter('COMPLETED')}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeStatusFilter === 'COMPLETED'
+                    ? 'bg-black text-white'
+                    : 'bg-green-50 text-green-700 hover:bg-green-100'
+                }`}
+              >
+                Done
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  activeStatusFilter === 'COMPLETED' ? 'bg-white/20' : 'bg-green-200 text-green-700'
+                }`}>{tasks.filter(t => t.completed).length}</span>
+              </button>
+            </div>
 
             {!hasResults ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
@@ -356,8 +399,8 @@ export default function DashboardPage() {
             )}
           </main>
 
-          {/* Overview Panel */}
-          <div className="w-72 flex-shrink-0">
+          {/* Overview Panel — hidden on mobile, visible lg+ */}
+          <div className="hidden lg:block w-72 flex-shrink-0">
             <OverviewPanel 
               tasks={tasks}
               activeStatusFilter={activeStatusFilter}

@@ -46,7 +46,7 @@ const TaskItem = memo(function TaskItem({
   };
 
   return (
-    <div className={`flex items-center gap-3 py-2 px-3 rounded hover:bg-gray-50 group ${
+    <div className={`flex items-center gap-3 py-3 md:py-2 px-3 rounded-lg hover:bg-gray-50 group ${
       isOverdue ? 'border-l-2 border-red-500 bg-red-50' : ''
     }`}>
       <input
@@ -85,7 +85,7 @@ const TaskItem = memo(function TaskItem({
           }
         }}
         disabled={loading}
-        className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 disabled:cursor-not-allowed transition-opacity"
+        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 hover:text-red-700 disabled:cursor-not-allowed transition-opacity flex-shrink-0"
         title="Delete task"
       >
         <Trash2 className="w-4 h-4" />
